@@ -17,7 +17,7 @@ dependencies = [
   "polib>=1,<2",
   "psutil>=7,<8",
   "python-dateutil>=2,<3",
-  "pywinusb>=0,<1",
+  "pywinusb>=0,<1; sys_platform == 'win32'",
   "requests>=2,<3",
   "sportident>=1,<2",
 ]

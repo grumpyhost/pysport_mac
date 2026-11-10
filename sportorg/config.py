@@ -76,7 +76,10 @@ def style_dir(*parts) -> str:
     return os.path.join(STYLE_DIR, *parts)
 
 
-COMMIT_VERSION_FILE = base_dir("version")
+if is_executable() and sys.platform == "darwin":
+    COMMIT_VERSION_FILE = base_dir(os.pardir, "Resources", "version")
+else:
+    COMMIT_VERSION_FILE = base_dir("version")
 
 
 def commit_version() -> str:

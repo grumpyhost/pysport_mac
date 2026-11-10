@@ -6,7 +6,7 @@ directory:
 * ``package_dir()`` — read-only resources shipped inside ``sportorg.data``
 * ``app_dir()`` — the directory holding the executable (or the repository
   root when running from source)
-* ``data_dir()`` / ``log_dir()`` — user-writable state under ``app_dir()``
+* ``data_dir()`` / ``log_dir()`` — user-writable state outside the macOS bundle
 
 Importing this module has no side effects.  Creating the directories and
 seeding them from the package is the job of :func:`sportorg.startup.init`.
@@ -77,12 +77,21 @@ def package_dir(*parts: str) -> str:
     return _RESOURCE_PATH_CACHE[key]
 
 
+def _state_dir(*parts: str) -> str:
+    if is_executable() and sys.platform == "darwin":
+        # Writing inside the bundle would invalidate its signature.
+        return os.path.join(
+            os.path.expanduser("~"), "Library", "Application Support", "SportOrg", *parts
+        )
+    return app_dir(*parts)
+
+
 def data_dir(*parts: str) -> str:
-    return app_dir("data", *parts)
+    return _state_dir("data", *parts)
 
 
 def log_dir(*parts: str) -> str:
-    return app_dir("logs", *parts)
+    return _state_dir("logs", *parts)
 
 
 def settings_json() -> str:

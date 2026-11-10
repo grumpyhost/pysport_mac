@@ -31,6 +31,9 @@ from sportorg.utils.time import time_to_otime
 from serial.tools import list_ports
 
 
+_MACOS_SYSTEM_PORTS = {"/dev/cu.BLTH", "/dev/cu.Bluetooth-Incoming-Port"}
+
+
 class SIReaderCommand:
     def __init__(self, command, data=None):
         self.command = command
@@ -49,20 +52,25 @@ class SIReaderThread(QThread):
 
     def run(self):
         try:
-            si = SIReaderReadout(port=self.port, logger=logging.root)
+            si = SIReaderReadout(port=self.port)
             if si.get_type() == SIReader.M_SRR:
                 si.disconnect()  # release port
-                si = SIReaderSRR(port=self.port, logger=logging.root)
+                si = SIReaderSRR(port=self.port)
             elif (
                 si.get_type() == SIReader.M_CONTROL
                 or si.get_type() == SIReader.M_BC_CONTROL
             ):
                 si.disconnect()  # release port
-                si = SIReaderControl(port=self.port, logger=logging.root)
+                si = SIReaderControl(port=self.port)
 
             si.poll_sicard()  # try to poll immediately to catch an exception
         except Exception as e:
-            self._logger.debug(str(e))
+            self._logger.warning(
+                "%s %s: %s",
+                translate("Cannot open SPORTident station on port"),
+                self.port,
+                e,
+            )
             return
 
         max_error = 2000
@@ -246,7 +254,9 @@ class SIReaderClient:
             self._start_result_thread()
             self._logger.info(translate("Opening port") + " " + self.port)
         else:
-            self._logger.info(translate("Cannot open port"))
+            self._logger.warning(
+                translate("No serial port for SPORTident. Connect the station and try again.")
+            )
 
     def stop(self):
         self._stop_event.set()
@@ -260,11 +270,16 @@ class SIReaderClient:
 
     @staticmethod
     def get_ports():
-        return [port.device for port in list_ports.comports()]
+        ports = [port.device for port in list_ports.comports()]
+        if platform.system() == "Darwin":
+            ports = [port for port in ports if port not in _MACOS_SYSTEM_PORTS]
+        return ports
 
     def choose_port(self):
         si_port = memory.race().get_setting("system_port", "")
-        if si_port:
+        if si_port and not (
+            platform.system() == "Darwin" and si_port in _MACOS_SYSTEM_PORTS
+        ):
             return si_port
         ports = self.get_ports()
         if len(ports):

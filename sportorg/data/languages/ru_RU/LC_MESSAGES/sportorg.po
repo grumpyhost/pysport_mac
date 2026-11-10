@@ -1222,6 +1222,12 @@ msgstr "Открытие порта"
 msgid "Cannot open port"
 msgstr "Ошибка при открытии порта"
 
+msgid "Cannot open SPORTident station on port"
+msgstr "Не удалось подключить станцию SPORTident через порт"
+
+msgid "No serial port for SPORTident. Connect the station and try again."
+msgstr "Нет доступного порта для SPORTident. Подключите станцию и попробуйте снова."
+
 msgid "Closing port"
 msgstr "Закрытие порта"
 

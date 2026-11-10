@@ -32,6 +32,7 @@ def package_root(tmp_path, monkeypatch):
 
 
 def test_app_dir_is_beside_the_executable_when_frozen(monkeypatch):
+    monkeypatch.setattr(paths.sys, "platform", "win32")
     monkeypatch.setattr(paths.sys, "frozen", True, raising=False)
     monkeypatch.setattr(
         paths.sys, "executable", os.path.join("C:", os.sep, "Prog", "SportOrg.exe")
@@ -40,6 +41,19 @@ def test_app_dir_is_beside_the_executable_when_frozen(monkeypatch):
     assert paths.app_dir() == os.path.join("C:", os.sep, "Prog")
     assert paths.data_dir() == os.path.join("C:", os.sep, "Prog", "data")
     assert paths.log_dir() == os.path.join("C:", os.sep, "Prog", "logs")
+
+
+def test_frozen_macos_keeps_writable_state_outside_bundle(tmp_path, monkeypatch):
+    monkeypatch.setattr(paths.sys, "frozen", True, raising=False)
+    monkeypatch.setattr(paths.sys, "platform", "darwin")
+    monkeypatch.setenv("HOME", str(tmp_path))
+    bundle_executable = "/Applications/SportOrg.app/Contents/MacOS/SportOrg"
+    monkeypatch.setattr(paths.sys, "executable", bundle_executable)
+
+    root = tmp_path / "Library" / "Application Support" / "SportOrg"
+    assert paths.app_dir() == os.path.dirname(bundle_executable)
+    assert paths.settings_json() == str(root / "data" / "settings.json")
+    assert paths.log_dir() == str(root / "logs")
 
 
 def test_app_dir_is_the_repository_root_when_running_from_source(monkeypatch):

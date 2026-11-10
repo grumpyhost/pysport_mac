@@ -388,3 +388,25 @@ def test_huichang(app, result_handler, socat):
     ]
     for i, split in enumerate(result.splits):
         assert (int(split.code), str(split.time)) == expected[i]
+
+
+@pytest.mark.parametrize("station_port", [None, "/dev/cu.usbserial-test"])
+def test_sportident_skips_macos_system_ports(monkeypatch, station_port):
+    from types import SimpleNamespace
+    from sportorg.modules.sportident import sireader
+
+    client = SIReaderClient()
+    devices = ["/dev/cu.BLTH", "/dev/cu.Bluetooth-Incoming-Port"]
+    if station_port:
+        devices.append(station_port)
+
+    monkeypatch.setattr(sireader.platform, "system", lambda: "Darwin")
+    monkeypatch.setattr(
+        sireader.list_ports,
+        "comports",
+        lambda: [SimpleNamespace(device=device) for device in devices],
+    )
+    monkeypatch.setattr(race(), "get_setting", lambda key, default: "/dev/cu.BLTH")
+
+    assert client.get_ports() == ([station_port] if station_port else [])
+    assert client.choose_port() == station_port
